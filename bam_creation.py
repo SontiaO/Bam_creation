@@ -79,7 +79,7 @@ def make_bam(unintersect_bed, intersect_bed, bam, vcf_tabix, newbam_name):
 
 
 def add_to_vcf(bed_path, vcf, newvcf_name):
-    new_vcf = VariantFile(newvcf_name, "wb", template=vcf)
+    new_vcf = VariantFile(newvcf_name, "wb", header=vcf.header)
     intersect_df = pd.read_csv(bed_path, sep='\t', names=["chromosome", "start", "end", "id", "quality", "strand"])
 
     for row_number, row in unintersect_df.iterrows():
@@ -94,33 +94,35 @@ def add_to_vcf(bed_path, vcf, newvcf_name):
 def pipeline(input_bam, input_vcf, newbam_name):
     print("Starting pipeline...")
     sort_command = f"samtools sort -o sort.bam {input_bam}"
-    subprocess.run(sort_command, shell=true)
+    subprocess.run(sort_command, shell=True)
 
     print("Bam sorted....")
-    subprocess.run("samtools index sort.bam", shell=true)
+    subprocess.run("samtools index sort.bam", shell=True)
 
     print("Bam indexed....")
-    vcf_intersect_command = f"bedtools intersect -a, sort.bam -b {input_vcf} -wa > vcf_intersect.bed"
-    subprocess.run(vcf_intersect_command, shell=true)
+    vcf_intersect_command = f"bedtools intersect -a, sort.bam -sorted -b {input_vcf} -sorted -wa > vcf_intersect.bed"
+    subprocess.run(vcf_intersect_command, shell=True)
 
     print("Ready to reduce the vcf...")
     smaller_vcf = add_to_vcf("vcf_intersect.bed", input_vcf, "smaller_vcf.vcf")
+    subprocess.run("bcftools sort -o sorted_smaller_vcf.vcf smaller_vcf.vcf", shell=True)
+    subprocess.run("bgzip smaller_vcf.vcf > smaller_vcf.vcf.gz", shell=True)
+    
 
     print("Vcf reduced...")
-    intersect_command = f"bedtools intersect -a sort.bam -b {smaller_vcf} -wa > intersect.bed"
-    subprocess.run(intersect_command, shell=true)
+    intersect_command = f"bedtools intersect -a sort.bam -sorted -b smaller_vcf.vcf.gz -sorted -wa > intersect.bed"
+    subprocess.run(intersect_command, shell=True)
 
     print("Bam & vcf intersection created....")
-    unintersect_command = f"bedtools intersect -a sort.bam -b {smaller_vcf} -v -wa > unintersect.bed"
-    subprocess.run(unintersect_command, shell=true)
+    unintersect_command = f"bedtools intersect -a sort.bam -sorted -b smaller_vcf.vcf.gz -sorted -v -wa > unintersect.bed"
+    subprocess.run(unintersect_command, shell=True)
 
     print("Bam & vcf unintersection created....")
-    vcf_index_command = f"tabix -f {smaller_vcf} > input_vcf.vcf.gz.tbi"
-    subprocess.run(vcf_index_command, shell=true)
+    vcf_index_command = f"tabix -f smaller_vcf.vcf.gz > input_vcf.vcf.gz.tbi"
+    subprocess.run(vcf_index_command, shell=True)
 
     print("Everything is ready, bam craetion has started...")
     newbam = make_bam("unintersect.bed", "intersect.bed", input_bam, "input_vcf.vcf.gz.tbi", newbam_name)
     # remove temporary files
 
 pipeline(bam_path, vcf_path, newbam_name)
-
