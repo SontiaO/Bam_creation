@@ -106,7 +106,7 @@ def pipeline(input_bam, input_vcf, newbam_name):
     subprocess.run("samtools index sort.bam", shell=True)
 
     print("Bam indexed....")
-    vcf_intersect_command = f"bedtools intersect -a, sort.bam -sorted -b {input_vcf} -sorted -wa -bed > vcf_intersect.bed"
+    vcf_intersect_command = f"bedtools intersect -a sort.bam -sorted -b {input_vcf} -sorted -wa -bed > vcf_intersect.bed"
     subprocess.run(vcf_intersect_command, shell=True)
 
     print("Ready to reduce the vcf...")
