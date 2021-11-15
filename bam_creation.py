@@ -14,7 +14,7 @@ def add_unintersecting_records_to_bam(bed_path, bam, new_bam):
     unintersect_df = pd.read_csv(bed_path, sep='\t', names=["chromosome", "start", "end", "id", "quality", "strand"], usecols = range(6))
 
     for row_number, row in unintersect_df.iterrows():
-        records = ref_bam.fetch(row["chromosome"], row["start"], row["end"])
+        records = ref_bam.fetch(str(row["chromosome"]), row["start"], row["end"])
 
         for record in records:
             new_bam.write(record)
@@ -52,10 +52,10 @@ def change_snps_and_save_to_bam(bed_path, bam, new_bam, vcf_tabix):
     intersect_df = pd.read_csv(bed_path, sep='\t', names=["chromosome", "start", "end", "id", "quality", "strand"], usecols = range(6))
 
     for row_number, row in intersect_df.iterrows():
-        alignments = ref_bam.fetch(row["chromosome"], row["start"], row["end"])
+        alignments = ref_bam.fetch(str(row["chromosome"]), row["start"], row["end"])
 
         for alignment in alignments:
-            snps = ref_tabix.fetch(row["chromosome"], row["start"], row["end"], parser=pysam.asTuple())
+            snps = ref_tabix.fetch(str(row["chromosome"]), row["start"], row["end"], parser=pysam.asTuple())
             seq = alignment.seq
 
             for snp in snps:
@@ -89,7 +89,7 @@ def add_to_vcf(bed_path, vcf, newvcf_name):
     intersect_df = pd.read_csv(bed_path, sep='\t', names=["chromosome", "start", "end", "id", "quality", "strand"], usecols = range(6))
 
     for row_number, row in unintersect_df.iterrows():
-        records = ref_vcf.fetch(row["chromosome"], row["start"], row["end"])
+        records = ref_vcf.fetch(str(row["chromosome"]), row["start"], row["end"])
 
         for record in records:
             new_vcf.write(record)
